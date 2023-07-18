@@ -17,7 +17,7 @@ Preconfigured permissions are set up for the Lambda functions to access DynamoDB
 ## Directory Structure
 
 Here's the structure of the project:
-
+```
 fullstack-serverless (root project folder)
 ├── frontend (folder for frontend configuration)
 │   ├── jss
@@ -33,7 +33,7 @@ fullstack-serverless (root project folder)
 ├── README.md (this file)
 ├── samconfig.toml (config for SAM deployment)
 └── template.yaml (cloudformation template)
-
+```
 
 ## Resources Created via CloudFormation
 
