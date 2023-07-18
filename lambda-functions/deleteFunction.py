@@ -1,5 +1,6 @@
 import json
 import boto3
+import os
 from botocore.exceptions import BotoCoreError, ClientError
 
 def lambda_handler(event, context):
@@ -7,8 +8,11 @@ def lambda_handler(event, context):
     item_id = event['pathParameters']['id']
     
     # Create a DynamoDB resource
-    dynamodb = boto3.resource('dynamodb')
-    
+    if os.environ['ENV'] == 'development':
+        dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+    else:
+        dynamodb = boto3.resource('dynamodb')
+        
     # Get the DynamoDB table
     table = dynamodb.Table('cloud9_table')
     
