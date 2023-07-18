@@ -57,11 +57,18 @@ Start by cloning this repository to your local machine.
 ```bash
 git clone https://github.com/<your-username>/fullstack-serverless-AWS.git
 ```
-2. **Install the AWS SAM CLI**
+2. **Copy the contents over to your new project directory**
+
+```
+rsync -av --exclude='.git' /path/to/folderB/ /path/to/folderA/
+```
+
+
+3. **Install the AWS SAM CLI**
 
 If you have not already done so, install the AWS SAM CLI (https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html). This tool is necessary to build and deploy your application.
 
-3. **Build the Application**
+4. **Build the Application**
 
 Navigate to the project directory and use SAM to build the application 
 
@@ -69,7 +76,7 @@ Navigate to the project directory and use SAM to build the application
 cd fullstack-serverless-AWS
 sam build
 ```
-4. **Deploy the Application**
+5. **Deploy the Application**
 
 Deploy your application using SAM. This will create the neccesary resources defined in your `template.yaml` file.
 
@@ -78,11 +85,11 @@ sam deploy --guided
 ```
 Follow the prompts in the deploy process to set the stack name, AWS Region and other parameters.
 
-5. **Test the Application**
+6. **Test the Application**
 
 Once deployment is successful, SAM will output the API Gateway URL which you can use to test your API. Test it by sending requests to the endpoints with a tool like curl or Postman.
 
-6. **Customize as Needed**
+7. **Customize as Needed**
 
 Now that your serverless application is up and running, you can begin customizing the template to fit your specific needs. You can add new Lambda functions, modify the existing ones, or extend the DynamoDB table as needed.
 
