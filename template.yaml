@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Full Stack Serverless Application
+
+Resources:
+
+  #IAM Role for Lambda functions
+  MyLambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect:  "Allow"
+          Principal:
+            Service:
+              - "lambda.amazonaws.com"
+          Action:
+            - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "MyDynamoDBPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "dynamodb:PutItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:DeleteItem"
+                Resource:
+                  Fn::GetAtt:
+                    - DynamoDBTable
+                    - Arn
+                    
+  # AWS Lambda functions
+  GetFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Handler: getFunction.lambda_handler 
+      Runtime: python3.9 
+      CodeUri: lambda-functions/
+      Role:
+        Fn::GetAtt:
+          - MyLambdaExecutionRole
+          - Arn
+      Events:
+        GetItem:
+          Type: Api 
+          Properties:
+            Path: /item/{id}
+            Method: get
+
+  PutFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: lambda-functions/
+      Handler: putFunction.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+          - MyLambdaExecutionRole
+          - Arn
+      Events:
+        PutItem:
+          Type: Api
+          Properties:
+            Path: /item
+            Method: put
+
+  DeleteFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: lambda-functions/
+      Handler: deleteFunction.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+          - MyLambdaExecutionRole
+          - Arn
+      Events:
+        DeleteItem:
+          Type: Api
+          Properties:
+            Path: /item/{id}
+            Method: delete
+
+  # DynamoDB Table
+  DynamoDBTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: cloud9_table
+
+Outputs:
+  # Output values
+  MyApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
