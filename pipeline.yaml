@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  # The CodePipeline
+  MyPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      RoleArn: !GetAtt MyPipelineRole.Arn
+      Stages: 
+        - Name: Source
+          Actions: 
+            - Name: Source
+              ActionTypeId: 
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Configuration:
+                Owner: INSERT_YOUR_GITHUB_USERNAME_HERE
+                Repo: INSERT_YOUR_REPO_NAME_HERE
+                Branch: INSERT_YOUR_BRANCH_NAME_HERE
+                OAuthToken: !Ref GitHubToken 
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+              Configuration:
+                ProjectName: INSERT_YOUR_CODEBUILD_PROJECT_NAME_HERE
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              InputArtifacts:
+                - Name: BuildArtifact
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                StackName: INSERT_YOUR_CLOUDFORMATION_STACK_NAME_HERE
+                ChangeSetName: MyChangeSet
+                RoleArn: !GetAtt MyCloudFormationExecutionRole.Arn
+                Capabilities: CAPABILITY_NAMED_IAM
+              RunOrder: 1
+      ArtifactStore: 
+        Type: S3
+        Location: !Ref PipelineBucket
+      Name: MyFirstPipeline
+      RestartExecutionOnUpdate: true
+      
+  # The S3 bucket used by the pipeline for storing artifacts
+  PipelineBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: 
+        Fn::Sub: "${ProjectName}-${Environment}-pipeline-artifacts"
+
+  # The IAM role used by the pipeline
+  MyPipelineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'codepipeline.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: CodePipelineAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:*'
+                  - 'codecommit:*'
+                  - 'codebuild:*'
+                  - 'cloudformation:*'
+                Resource: '*'
+
+  # The IAM role used by CloudFormation during the deployment action
+  MyCloudFormationExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'cloudformation.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CloudFormationAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+Parameters:
+  GitHubToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: codepipeline-aws-cloudzack
+    Description: The GitHub token stored in AWS Secrets Manager
+
+  ProjectName:
+    Type: String
+    Description: Project name
+
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment environment

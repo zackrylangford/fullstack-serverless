@@ -2,9 +2,29 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Full Stack Serverless Application
 
-Resources:
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Project name
 
-  #IAM Role for Lambda functions
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment environment
+
+  AccountName:
+    Type: String
+    Description: Account name for billing purposes
+    
+  Globals:
+  Function:
+    Tags:
+      Account: !Ref AccountName
+      Project: !Ref ProjectName
+
+Resources:
   MyLambdaExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -19,7 +39,8 @@ Resources:
             - "sts:AssumeRole"
       Path: "/"
       Policies:
-        - PolicyName: "MyDynamoDBPolicy"
+        - PolicyName: 
+            Fn::Sub: "${ProjectName}-${Environment}MyDynamoDBPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -32,11 +53,12 @@ Resources:
                   Fn::GetAtt:
                     - DynamoDBTable
                     - Arn
-                    
-  # AWS Lambda functions
+
   GetFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName:
+        Fn::Sub: "${ProjectName}-${Environment}_getFunction"
       Handler: getFunction.lambda_handler 
       Runtime: python3.9 
       CodeUri: lambda-functions/
@@ -54,6 +76,8 @@ Resources:
   PutFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName:
+        Fn::Sub: "${ProjectName}-${Environment}_putFunction"
       CodeUri: lambda-functions/
       Handler: putFunction.lambda_handler
       Runtime: python3.9
@@ -71,6 +95,8 @@ Resources:
   DeleteFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName:
+        Fn::Sub: "${ProjectName}-${Environment}_deleteFunction"
       CodeUri: lambda-functions/
       Handler: deleteFunction.lambda_handler
       Runtime: python3.9
@@ -85,14 +111,16 @@ Resources:
             Path: /item/{id}
             Method: delete
 
-  # DynamoDB Table
   DynamoDBTable:
     Type: AWS::Serverless::SimpleTable
     Properties:
-      TableName: cloud9_table
+      TableName: 
+        Fn::Sub: "${ProjectName}-${Environment}_dynamodb_table"
+      Tags:
+        Account: !Ref AccountName
+        Project: !Ref ProjectName
 
 Outputs:
-  # Output values
   MyApi:
     Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
